@@ -1,11 +1,11 @@
 # Auto decorators for Angular
 
 ```ts
-@Auto()
 @Component({
    template: `{{ count }}`,
    changeDetection: ChangeDetectionStrategy.OnPush,
 })
+@Auto() // must be evaluated before angular decorator
 export class MyComponent {
    @Check()
    count = 0;

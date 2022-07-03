@@ -17,52 +17,58 @@ class AutoObserver {
 
 export function Auto() {
    return function <T extends Constructor>(target: T) {
-      return class extends target {
-         readonly [observer] = new AutoObserver(
-            inject(ChangeDetectorRef),
-            inject(ErrorHandler)
-         );
-         ngDoCheck() {
-            for (const key of getMetaKey(target.prototype, check).keys()) {
-               const currentValue = this[key];
-               const previousValue = getMetaKey(this, previous, check).get(key);
-               if (currentValue !== previousValue) {
-                  getMetaKey(this, previous, check).set(key, currentValue);
-                  this[observer].next();
-               }
+      const ngDoCheck = target.prototype.ngDoCheck
+      target.prototype.ngDoCheck = function () {
+         for (const key of getMetaKey(target.prototype, check).keys()) {
+            const currentValue = this[key];
+            const previousValue = getMetaKey(this, previous, check).get(key);
+            if (currentValue !== previousValue) {
+               getMetaKey(this, previous, check).set(key, currentValue);
+               this[observer].next();
             }
-            for (const key of getMetaKey(target.prototype, subscribe).keys()) {
-               const currentValue = this[key];
-               const previousValue = getMetaKey(this, previous, subscribe).get(
-                  key
+         }
+         for (const key of getMetaKey(target.prototype, subscribe).keys()) {
+            const currentValue = this[key];
+            const previousValue = getMetaKey(this, previous, subscribe).get(
+               key
+            );
+            if (currentValue !== previousValue) {
+               getMetaKey(this, previous, subscribe).set(key, currentValue);
+               const subscriptionMap = getMetaKey(
+                  this,
+                  previous,
+                  unsubscribe
                );
-               if (currentValue !== previousValue) {
-                  getMetaKey(this, previous, subscribe).set(key, currentValue);
-                  const subscriptionMap = getMetaKey(
-                     this,
-                     previous,
-                     unsubscribe
-                  );
-                  subscriptionMap.get(key)?.unsubscribe?.();
-                  subscriptionMap.set(
-                     key,
-                     currentValue.subscribe(this[observer])
-                  );
-               }
+               subscriptionMap.get(key)?.unsubscribe?.();
+               subscriptionMap.set(
+                  key,
+                  currentValue.subscribe(this[observer])
+               );
             }
-            super.ngDoCheck?.()
          }
-         ngOnDestroy() {
-            for (const key of getMetaKey(this, previous, unsubscribe).keys()) {
-               getMetaKey(this, previous, unsubscribe).get(key).unsubscribe?.();
-            }
-            for (const key of getMetaKey(target.prototype, unsubscribe).keys()) {
-               this[key].complete?.();
-               this[key].unsubscribe?.();
-            }
-            super.ngOnDestroy?.()
+         ngDoCheck?.apply(this)
+      }
+      const ngOnDestroy = target.prototype.ngOnDestroy
+      target.prototype.ngOnDestroy = function () {
+         for (const key of getMetaKey(this, previous, unsubscribe).keys()) {
+            getMetaKey(this, previous, unsubscribe).get(key).unsubscribe?.();
          }
-      };
+         for (const key of getMetaKey(target.prototype, unsubscribe).keys()) {
+            this[key].complete?.();
+            this[key].unsubscribe?.();
+         }
+         ngOnDestroy?.apply(this)
+      }
+      return new Proxy(target, {
+         construct(target: T, argArray: any[], newTarget: Function): object {
+            const instance = Reflect.construct(target, argArray, newTarget)
+            Object.defineProperty(instance, observer, { value: new AutoObserver(
+               inject(ChangeDetectorRef),
+               inject(ErrorHandler)
+            )})
+            return instance
+         }
+      })
    };
 }
 

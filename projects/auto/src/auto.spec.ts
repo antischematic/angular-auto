@@ -182,11 +182,11 @@ describe("Auto", () => {
 
    describe("Component", () => {
       it("should create", () => {
-         @Auto()
          @Component({
             template: `{{ count }}`,
             changeDetection: ChangeDetectionStrategy.OnPush,
          })
+         @Auto()
          class MyComponent {
             @Check()
             count = 0;
