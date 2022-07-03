@@ -33,4 +33,4 @@ When a value is assigned it will subscribe to the new observable and dispose the
 
 ### `Unsubscribe`
 
-Disposes the decorated subscription during `ngOnDestroy`. You must still manually unsubscribe before assigning a new value to prevent memory leaks.
+Disposes the decorated subject or subscription during `ngOnDestroy`. You must still manually call `complete` and/or `unsubscribe` before assigning a new value to prevent memory leaks.
