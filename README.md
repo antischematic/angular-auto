@@ -1,27 +1,36 @@
-# AngularAuto
+# Auto decorators for Angular
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 14.0.2.
+```ts
+@Auto()
+@Component({
+   template: `{{ count }}`,
+   changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class MyComponent {
+   @Check()
+   count = 0;
 
-## Development server
+   @Subscribe()
+   count$ = interval(1000).pipe(
+      tap((value) => this.count = value + 1)
+   );
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+   @Unsubscribe()
+   subscription = new Subscription();
+}
+```
 
-## Code scaffolding
+## Decorators
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+### `Check`
 
-## Build
+When the decorated value is changed, marks the view for check on the next change detection cycle. Use with `OnPush` change detection strategy.
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+### `Subscribe`
 
-## Running unit tests
+Subscribe to the decorated observable during `ngDoCheck`. When a value is emitted, marks the view for check. Use with `OnPush` change detection strategy.
+When a value is assigned it will subscribe to the new observable and dispose the previous subscription on the next change detection cycle.
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+### `Unsubscribe`
 
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+Disposes the decorated subscription during `ngOnDestroy`. You must still manually unsubscribe before assigning a new value to prevent memory leaks.

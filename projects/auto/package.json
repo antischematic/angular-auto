@@ -1,11 +1,18 @@
 {
-  "name": "@mmuscat/angular-auto",
-  "version": "0.0.1",
-  "peerDependencies": {
-    "@angular/common": "^14.0.0",
-    "@angular/core": "^14.0.0"
-  },
-  "dependencies": {
-    "tslib": "^2.3.0"
-  }
+   "name": "@mmuscat/angular-auto",
+   "description": "Auto decorators for Angular",
+   "repository": {
+      "url": "https://github.com/mmuscat/angular-auto.git",
+      "type": "git"
+   },
+   "license": "MIT",
+   "keywords": ["Angular", "decorator", "unsubscribe", "auto", "rxjs"],
+   "version": "0.0.1",
+   "peerDependencies": {
+      "@angular/common": "^14.0.0",
+      "@angular/core": "^14.0.0"
+   },
+   "dependencies": {
+      "tslib": "^2.3.0"
+   }
 }

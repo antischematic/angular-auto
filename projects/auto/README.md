@@ -1,24 +1,36 @@
-# Auto
+# Auto decorators for Angular
 
-This library was generated with [Angular CLI](https://github.com/angular/angular-cli) version 14.0.0.
+```ts
+@Auto()
+@Component({
+   template: `{{ count }}`,
+   changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class MyComponent {
+   @Check()
+   count = 0;
 
-## Code scaffolding
+   @Subscribe()
+   count$ = interval(1000).pipe(
+      tap((value) => this.count = value + 1)
+   );
 
-Run `ng generate component component-name --project auto` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module --project auto`.
-> Note: Don't forget to add `--project auto` or else it will be added to the default project in your `angular.json` file. 
+   @Unsubscribe()
+   subscription = new Subscription();
+}
+```
 
-## Build
+## Decorators
 
-Run `ng build auto` to build the project. The build artifacts will be stored in the `dist/` directory.
+### `Check`
 
-## Publishing
+When the decorated value is changed, marks the view for check on the next change detection cycle. Use with `OnPush` change detection strategy.
 
-After building your library with `ng build auto`, go to the dist folder `cd dist/auto` and run `npm publish`.
+### `Subscribe`
 
-## Running unit tests
+Subscribe to the decorated observable during `ngDoCheck`. When a value is emitted, marks the view for check. Use with `OnPush` change detection strategy.
+When a value is assigned it will subscribe to the new observable and dispose the previous subscription on the next change detection cycle.
 
-Run `ng test auto` to execute the unit tests via [Karma](https://karma-runner.github.io).
+### `Unsubscribe`
 
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+Disposes the decorated subject or subscription during `ngOnDestroy`. You must still manually call `complete` and/or `unsubscribe` before assigning a new value to prevent memory leaks.
