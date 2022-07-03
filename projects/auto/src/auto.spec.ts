@@ -180,6 +180,26 @@ describe("Auto", () => {
       });
    });
 
+   it("should allow null values", () => {
+      @Injectable({ providedIn: "root" })
+      @Auto()
+      class AutoTest {
+         @Unsubscribe()
+         subscription = null
+
+         @Subscribe()
+         source = null
+
+         @Check()
+         value = null
+      }
+      const autoTest = TestBed.inject(AutoTest);
+      // @ts-expect-error
+      autoTest.ngDoCheck()
+      TestBed.resetTestingModule()
+      expect(autoTest).toBeTruthy()
+   })
+
    describe("Component", () => {
       it("should create", () => {
          @Component({

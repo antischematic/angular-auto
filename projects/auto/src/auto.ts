@@ -42,7 +42,7 @@ export function Auto() {
                subscriptionMap.get(key)?.unsubscribe?.();
                subscriptionMap.set(
                   key,
-                  currentValue.subscribe(this[observer])
+                  currentValue?.subscribe(this[observer])
                );
             }
          }
@@ -51,11 +51,11 @@ export function Auto() {
       const ngOnDestroy = target.prototype.ngOnDestroy
       target.prototype.ngOnDestroy = function () {
          for (const key of getMetaKey(this, previous, unsubscribe).keys()) {
-            getMetaKey(this, previous, unsubscribe).get(key).unsubscribe?.();
+            getMetaKey(this, previous, unsubscribe).get(key)?.unsubscribe?.();
          }
          for (const key of getMetaKey(target.prototype, unsubscribe).keys()) {
-            this[key].complete?.();
-            this[key].unsubscribe?.();
+            this[key]?.complete?.();
+            this[key]?.unsubscribe?.();
          }
          ngOnDestroy?.apply(this)
       }
