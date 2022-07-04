@@ -1,4 +1,4 @@
-import { Auto, Check, Subscribe, Unsubscribe } from "./auto";
+import {Auto, Check, Detect, Subscribe, Unsubscribe} from "./auto";
 import {
    ChangeDetectionStrategy,
    ChangeDetectorRef,
@@ -192,6 +192,9 @@ describe("Auto", () => {
 
          @Check()
          value = null
+
+         @Detect()
+         object = null
       }
       const autoTest = TestBed.inject(AutoTest);
       // @ts-expect-error
@@ -242,4 +245,86 @@ describe("Auto", () => {
          expect(fixture.debugElement.nativeElement.innerText).toBe("10");
       });
    });
+
+   describe("Detect", () => {
+      const spy = createSpy()
+      const methods = ["ngOnChanges", "ngOnInit", "ngDoCheck", "ngAfterContentInit", "ngAfterContentChecked", "ngAfterViewInit", "ngAfterViewChecked", "ngOnDestroy"] as const
+
+      @Auto()
+      class Detectable {
+         ngOnChanges() {
+            spy("ngOnChanges")
+         }
+         ngOnInit() {
+            spy("ngOnInit")
+         }
+         ngDoCheck() {
+            spy("ngDoCheck")
+         }
+         ngAfterContentInit() {
+            spy("ngAfterContentInit")
+         }
+         ngAfterContentChecked() {
+            spy("ngAfterContentChecked")
+         }
+         ngAfterViewInit() {
+            spy("ngAfterViewInit")
+         }
+         ngAfterViewChecked() {
+            spy("ngAfterViewChecked")
+         }
+         ngOnDestroy() {
+            spy("ngOnDestroy")
+         }
+         @Detect()
+         nested?: Detectable
+      }
+
+      it("should decorate", () => {
+         @Auto()
+         class AutoTest {
+            @Detect()
+            object = new Detectable();
+         }
+         expect(AutoTest).toBeTruthy();
+      })
+
+      it("should detect lifecycle methods", () => {
+         @Injectable({ providedIn: "root" })
+         @Auto()
+         class AutoTest {
+            @Detect()
+            object = new Detectable();
+         }
+         const test = TestBed.inject(AutoTest)
+
+         for (const method of methods) {
+            // @ts-expect-error
+            test[method]()
+            expect(spy).toHaveBeenCalledOnceWith(method)
+            spy.calls.reset()
+         }
+      })
+
+      it("should detect lifecycle methods recursively", () => {
+         @Injectable({ providedIn: "root" })
+         @Auto()
+         class AutoTest {
+            @Detect()
+            object = new Detectable();
+            constructor() {
+               this.object.nested = new Detectable()
+            }
+         }
+         const test = TestBed.inject(AutoTest)
+
+         for (const method of methods) {
+            // @ts-expect-error
+            test[method]()
+            expect(spy).toHaveBeenCalledWith(method)
+            expect(spy).toHaveBeenCalledTimes(2)
+            spy.calls.reset()
+         }
+      })
+   })
 });

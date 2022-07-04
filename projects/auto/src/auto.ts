@@ -15,6 +15,22 @@ class AutoObserver {
    ) {}
 }
 
+const methods = ["ngOnChanges", "ngOnInit", "ngDoCheck", "ngAfterContentInit", "ngAfterContentChecked", "ngAfterViewInit", "ngAfterViewChecked", "ngOnDestroy"]
+
+function setupLifecycles(target: any) {
+   if (getMetaKey(target, detect).size) {
+      for (const method of methods) {
+         const fn = target[method]
+         target[method] = function (arg?: any) {
+            for (const key of getMetaKey(target, detect).keys()) {
+               this[key]?.[method]?.(arg)
+            }
+            fn?.call(this, arg)
+         }
+      }
+   }
+}
+
 export function Auto() {
    return function <T extends Constructor>(target: T) {
       const ngDoCheck = target.prototype.ngDoCheck
@@ -59,6 +75,7 @@ export function Auto() {
          }
          ngOnDestroy?.apply(this)
       }
+      setupLifecycles(target.prototype)
       return new Proxy(target, {
          construct(target: T, argArray: any[], newTarget: Function): object {
             const instance = Reflect.construct(target, argArray, newTarget)
@@ -77,6 +94,7 @@ const subscribe = Symbol();
 const observer = Symbol();
 const previous = Symbol();
 const unsubscribe = Symbol();
+const detect = Symbol();
 
 const metadata = new WeakMap();
 
@@ -97,20 +115,15 @@ function setMetaKey(
    getMetaKey(target, meta, property).set(value);
 }
 
-export function Check(): PropertyDecorator {
-   return function (target: any, key: PropertyKey) {
-      setMetaKey(target, check, key);
-   };
+function createDecorator(meta: PropertyKey): () => PropertyDecorator {
+   return function () {
+      return function (target: any, key: PropertyKey) {
+         setMetaKey(target, meta, key);
+      };
+   }
 }
 
-export function Subscribe(): PropertyDecorator {
-   return function (target: any, key: PropertyKey) {
-      setMetaKey(target, subscribe, key);
-   };
-}
-
-export function Unsubscribe(): PropertyDecorator {
-   return function (target: any, key: PropertyKey) {
-      setMetaKey(target, unsubscribe, key);
-   };
-}
+export const Check = createDecorator(check)
+export const Subscribe = createDecorator(subscribe)
+export const Unsubscribe = createDecorator(unsubscribe)
+export const Detect = createDecorator(detect)

@@ -7,11 +7,14 @@
 })
 @Auto() // must be evaluated before angular decorator
 export class MyComponent {
-   @Check()
+   @Input()
    count = 0;
 
+   @Detect()
+   object = new Resource()
+
    @Subscribe()
-   count$ = interval(1000).pipe(
+   autoIncrement = interval(1000).pipe(
       tap((value) => this.count = value + 1)
    );
 
@@ -20,17 +23,40 @@ export class MyComponent {
 }
 ```
 
+```ts
+@Auto()
+export class Resource {
+   private http = inject(HttpClient)
+
+   @Check()
+   value
+   
+   ngOnInit() {
+      console.log("hello!")
+   }
+
+   fetch(params) {
+      this.http.get(endpoint, params)
+         .subscribe((value) => this.value = value)
+   }
+}
+```
+
 ## Decorators
 
 ### `Check`
 
-When the decorated value is changed, marks the view for check on the next change detection cycle. Use with `OnPush` change detection strategy.
+Automatically check when the decorated value and mark the view dirty when it changes. Use with `OnPush` change detection strategy.
+
+### `Detect`
+
+Automatically detect and forward lifecycle hooks to the decorated object. Can be repeated on nested objects.
 
 ### `Subscribe`
 
-Subscribe to the decorated observable during `ngDoCheck`. When a value is emitted, marks the view for check. Use with `OnPush` change detection strategy.
-When a value is assigned it will subscribe to the new observable and dispose the previous subscription on the next change detection cycle.
+Automatically subscribe to the decorated observable during `ngDoCheck` and mark the view dirty whenever a value is emitted. Use with `OnPush` change detection strategy.
+Assigning new values will automatically cancel the previous subscription. Subscriptions are automatically unsubscribed when the context is destroyed.
 
 ### `Unsubscribe`
 
-Disposes the decorated subject or subscription during `ngOnDestroy`. You must still manually call `complete` and/or `unsubscribe` before assigning a new value to prevent memory leaks.
+Automatically unsubscribe the decorated subject or subscription during `ngOnDestroy`. You must still manually call `complete` and/or `unsubscribe` before assigning a new value to prevent memory leaks.
