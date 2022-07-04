@@ -1,4 +1,4 @@
-import {Auto, Check, Detect, Subscribe, Unsubscribe} from "./auto";
+import {Auto, Check, Subscribe, Unsubscribe} from "./auto";
 import {
    ChangeDetectionStrategy,
    ChangeDetectorRef,
@@ -192,9 +192,6 @@ describe("Auto", () => {
 
          @Check()
          value = null
-
-         @Detect()
-         object = null
       }
       const autoTest = TestBed.inject(AutoTest);
       // @ts-expect-error
@@ -246,12 +243,12 @@ describe("Auto", () => {
       });
    });
 
-   describe("Detect", () => {
+   describe("Composition", () => {
       const spy = createSpy()
       const methods = ["ngOnChanges", "ngOnInit", "ngDoCheck", "ngAfterContentInit", "ngAfterContentChecked", "ngAfterViewInit", "ngAfterViewChecked", "ngOnDestroy"] as const
 
       @Auto()
-      class Detectable {
+      class Composable {
          ngOnChanges() {
             spy("ngOnChanges")
          }
@@ -276,25 +273,23 @@ describe("Auto", () => {
          ngOnDestroy() {
             spy("ngOnDestroy")
          }
-         @Detect()
-         nested?: Detectable
       }
 
       it("should decorate", () => {
          @Auto()
          class AutoTest {
-            @Detect()
-            object = new Detectable();
+            object = new Composable();
          }
          expect(AutoTest).toBeTruthy();
       })
 
-      it("should detect lifecycle methods", () => {
+      it("should compose lifecycle methods", () => {
          @Injectable({ providedIn: "root" })
          @Auto()
          class AutoTest {
-            @Detect()
-            object = new Detectable();
+            constructor() {
+               new Composable();
+            }
          }
          const test = TestBed.inject(AutoTest)
 
@@ -306,14 +301,13 @@ describe("Auto", () => {
          }
       })
 
-      it("should detect lifecycle methods recursively", () => {
+      it("should compose lifecycle methods for each object", () => {
          @Injectable({ providedIn: "root" })
          @Auto()
          class AutoTest {
-            @Detect()
-            object = new Detectable();
             constructor() {
-               this.object.nested = new Detectable()
+               new Composable();
+               new Composable()
             }
          }
          const test = TestBed.inject(AutoTest)

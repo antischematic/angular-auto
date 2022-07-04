@@ -18,14 +18,12 @@ class AutoObserver {
 const methods = ["ngOnChanges", "ngOnInit", "ngDoCheck", "ngAfterContentInit", "ngAfterContentChecked", "ngAfterViewInit", "ngAfterViewChecked", "ngOnDestroy"]
 
 function setupLifecycles(target: any) {
-   if (getMetaKey(target, detect).size) {
-      for (const method of methods) {
-         const fn = target[method]
-         target[method] = function (arg?: any) {
-            for (const key of getMetaKey(target, detect).keys()) {
-               this[key]?.[method]?.(arg)
-            }
-            fn?.call(this, arg)
+   for (const method of methods) {
+      const fn = target[method]
+      target[method] = function (arg?: any) {
+         fn?.call(this, arg)
+         for (const dep of this[auto]) {
+            dep[method]?.(arg)
          }
       }
    }
@@ -78,7 +76,12 @@ export function Auto() {
       setupLifecycles(target.prototype)
       return new Proxy(target, {
          construct(target: T, argArray: any[], newTarget: Function): object {
+            const deps = new Set()
+            const previous = setDeps(deps)
             const instance = Reflect.construct(target, argArray, newTarget)
+            previous?.add(instance)
+            Object.defineProperty(instance, auto, { value: deps })
+            setDeps(previous)
             Object.defineProperty(instance, observer, { value: new AutoObserver(
                inject(ChangeDetectorRef),
                inject(ErrorHandler)
@@ -89,12 +92,20 @@ export function Auto() {
    };
 }
 
+let deps: Set<any> | undefined
+
+function setDeps(value?: Set<any>): Set<any> | undefined {
+   const previous = deps
+   deps = value
+   return previous
+}
+
+const auto = Symbol();
 const check = Symbol();
 const subscribe = Symbol();
 const observer = Symbol();
 const previous = Symbol();
 const unsubscribe = Symbol();
-const detect = Symbol();
 
 const metadata = new WeakMap();
 
@@ -126,4 +137,3 @@ function createDecorator(meta: PropertyKey): () => PropertyDecorator {
 export const Check = createDecorator(check)
 export const Subscribe = createDecorator(subscribe)
 export const Unsubscribe = createDecorator(unsubscribe)
-export const Detect = createDecorator(detect)

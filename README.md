@@ -1,16 +1,15 @@
 # Auto decorators for Angular
 
 ```ts
+@Auto()
 @Component({
    template: `{{ count }}`,
    changeDetection: ChangeDetectionStrategy.OnPush,
 })
-@Auto() // must be evaluated before angular decorator
 export class MyComponent {
    @Input()
    count = 0;
-   
-   @Detect()
+
    object = new Resource()
 
    @Subscribe()
@@ -20,6 +19,10 @@ export class MyComponent {
 
    @Unsubscribe()
    subscription = new Subscription();
+
+   ngOnInit() {
+      console.log("I am called!")
+   }
 }
 ```
 
@@ -32,7 +35,7 @@ export class Resource {
    value
    
    ngOnInit() {
-      console.log("hello!")
+      console.log("I am also called!")
    }
 
    fetch(params) {
@@ -44,13 +47,13 @@ export class Resource {
 
 ## Decorators
 
+### `Auto`
+
+Automatically compose the decorated class. Lifecycle hooks are called for any `Auto` decorated object created inside a field initializer or class constructor.
+
 ### `Check`
 
 Automatically check when the decorated value and mark the view dirty when it changes. Use with `OnPush` change detection strategy.
-
-### `Detect`
-
-Automatically detect and forward lifecycle hooks to the decorated object. Can be repeated on nested objects.
 
 ### `Subscribe`
 
