@@ -4,8 +4,9 @@ import {
    ChangeDetectorRef,
    Component,
    Injectable,
+   ɵNG_PROV_DEF
 } from "@angular/core";
-import { TestBed } from "@angular/core/testing";
+import {fakeAsync, TestBed} from "@angular/core/testing";
 import {BehaviorSubject, Subject, Subscription} from "rxjs";
 import createSpy = jasmine.createSpy;
 
@@ -202,11 +203,11 @@ describe("Auto", () => {
 
    describe("Component", () => {
       it("should create", () => {
+         @Auto()
          @Component({
             template: `{{ count }}`,
             changeDetection: ChangeDetectionStrategy.OnPush,
          })
-         @Auto()
          class MyComponent {
             @Check()
             count = 0;
@@ -244,8 +245,12 @@ describe("Auto", () => {
    });
 
    describe("Composition", () => {
-      const spy = createSpy()
+      let spy: jasmine.Spy
       const methods = ["ngOnChanges", "ngOnInit", "ngDoCheck", "ngAfterContentInit", "ngAfterContentChecked", "ngAfterViewInit", "ngAfterViewChecked", "ngOnDestroy"] as const
+
+      beforeEach(() => {
+        spy = createSpy()
+      })
 
       @Auto()
       class Composable {
@@ -302,12 +307,11 @@ describe("Auto", () => {
       })
 
       it("should compose lifecycle methods for each object", () => {
-         @Injectable({ providedIn: "root" })
          @Auto()
+         @Injectable({ providedIn: "root" })
          class AutoTest {
             constructor() {
                new Composable();
-               new Composable()
             }
          }
          const test = TestBed.inject(AutoTest)
@@ -316,7 +320,7 @@ describe("Auto", () => {
             // @ts-expect-error
             test[method]()
             expect(spy).toHaveBeenCalledWith(method)
-            expect(spy).toHaveBeenCalledTimes(2)
+            expect(spy).toHaveBeenCalledTimes(1)
             spy.calls.reset()
          }
       })

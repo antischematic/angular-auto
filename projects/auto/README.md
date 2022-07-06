@@ -51,6 +51,8 @@ export class Resource {
 
 Automatically compose the decorated class. Lifecycle hooks are called for any `Auto` decorated object created inside a field initializer or class constructor.
 
+> :warning: Runtime constructor injection is disabled when a class is decorated with `Auto`. Use `inject` to get dependencies instead.
+
 ### `Check`
 
 Automatically check when the decorated value and mark the view dirty when it changes. Use with `OnPush` change detection strategy.

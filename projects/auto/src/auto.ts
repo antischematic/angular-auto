@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, ErrorHandler, inject } from "@angular/core";
+import { ChangeDetectorRef, ErrorHandler, inject, ɵNG_PROV_DEF, ɵNG_DIR_DEF, ɵNG_COMP_DEF, ɵNG_PIPE_DEF, ɵNG_INJ_DEF, ɵNG_MOD_DEF } from "@angular/core";
 
 type Constructor = new (...args: any[]) => any;
 
@@ -29,8 +29,35 @@ function setupLifecycles(target: any) {
    }
 }
 
+function create(fn: Function, addDep = true) {
+   const deps = new Set()
+   const previous = setDeps(deps)
+   try {
+      const instance = fn()
+      if (addDep) {
+         previous?.add(instance)
+      }
+      Object.defineProperty(instance, auto, {value: deps})
+      Object.defineProperty(instance, observer, {
+         value: new AutoObserver(
+            inject(ChangeDetectorRef),
+            inject(ErrorHandler)
+         )
+      })
+      return instance
+   } finally {
+      setDeps(previous)
+   }
+}
+
+const keys = [ɵNG_COMP_DEF, ɵNG_DIR_DEF, ɵNG_INJ_DEF, ɵNG_PROV_DEF, ɵNG_PIPE_DEF, ɵNG_MOD_DEF]
+
+function findDef(target: any): any {
+   return keys.find(key => target[key])
+}
+
 export function Auto() {
-   return function <T extends Constructor>(target: T) {
+   return function <T extends Constructor>(target: any) {
       const ngDoCheck = target.prototype.ngDoCheck
       target.prototype.ngDoCheck = function () {
          for (const key of getMetaKey(target.prototype, check).keys()) {
@@ -74,21 +101,20 @@ export function Auto() {
          ngOnDestroy?.apply(this)
       }
       setupLifecycles(target.prototype)
-      return new Proxy(target, {
-         construct(target: T, argArray: any[], newTarget: Function): object {
-            const deps = new Set()
-            const previous = setDeps(deps)
-            const instance = Reflect.construct(target, argArray, newTarget)
-            previous?.add(instance)
-            Object.defineProperty(instance, auto, { value: deps })
-            setDeps(previous)
-            Object.defineProperty(instance, observer, { value: new AutoObserver(
-               inject(ChangeDetectorRef),
-               inject(ErrorHandler)
-            )})
-            return instance
+      const key = findDef(target)
+      const def = target[key]
+      if (def) {
+         const factory = def.factory
+         def.factory = function (...argArray: any[]) {
+            return create(() => factory ? factory(...argArray) : new target(...argArray), false)
          }
-      })
+      } else {
+         return new Proxy(target, {
+            construct(target: T, argArray: any[], newTarget: Function): object {
+               return create(() => Reflect.construct(target, argArray, newTarget))
+            }
+         })
+      }
    };
 }
 
