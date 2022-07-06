@@ -4,18 +4,31 @@ import { interval } from "rxjs";
 import { tap } from "rxjs/operators";
 import {HttpClient} from "@angular/common/http";
 
+
 @Auto()
 @Injectable()
 export class Service {
+   object = new Composable("service")
 
+   ngOnDestroy() {
+      console.log('destroy')
+   }
 }
+
 
 @Auto()
 class Composable {
    changeDetectorRef = inject(ChangeDetectorRef)
+
    ngOnInit() {
-      console.log('nested init')
+      console.log('nested init', this.context)
    }
+
+   ngOnDestroy() {
+      console.log('nested destroy', this.context)
+   }
+
+   constructor(private context: string) {}
 }
 
 @Auto()
@@ -30,7 +43,7 @@ export class AppComponent {
 
    service = inject(Service)
 
-   object = new Composable()
+   object = new Composable("component")
 
    @Check()
    count = 0;
@@ -38,7 +51,8 @@ export class AppComponent {
    @Subscribe()
    increment = interval(1000).pipe(tap(() => this.count++));
 
-   constructor() {
+   constructor(cdr: ChangeDetectorRef) {
+      console.log('cdr', cdr)
       const injector = inject(Injector)
       setTimeout(() => {
          console.log(injector.get(AppComponent))

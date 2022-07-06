@@ -33,7 +33,7 @@ export class Resource {
 
    @Check()
    value
-   
+
    ngOnInit() {
       console.log("I am also called!")
    }
@@ -49,9 +49,7 @@ export class Resource {
 
 ### `Auto`
 
-Automatically compose the decorated class. Lifecycle hooks are called for any `Auto` decorated object created inside a field initializer or class constructor.
-
-> :warning: Runtime constructor injection is disabled when a class is decorated with `Auto`. Use `inject` to get dependencies instead.
+Automatically compose the decorated class. Lifecycle hooks cascade to any `Auto` decorated object created inside a field initializer or class constructor.
 
 ### `Check`
 

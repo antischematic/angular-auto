@@ -1,6 +1,4 @@
-import { ChangeDetectorRef, ErrorHandler, inject, ɵNG_PROV_DEF, ɵNG_DIR_DEF, ɵNG_COMP_DEF, ɵNG_PIPE_DEF, ɵNG_INJ_DEF, ɵNG_MOD_DEF } from "@angular/core";
-
-type Constructor = new (...args: any[]) => any;
+import { ChangeDetectorRef, ErrorHandler, inject } from "@angular/core";
 
 class AutoObserver {
    next() {
@@ -16,6 +14,7 @@ class AutoObserver {
 }
 
 const methods = ["ngOnChanges", "ngOnInit", "ngDoCheck", "ngAfterContentInit", "ngAfterContentChecked", "ngAfterViewInit", "ngAfterViewChecked", "ngOnDestroy"]
+const ɵNG_FAC_DEF = "ɵfac"
 
 function setupLifecycles(target: any) {
    for (const method of methods) {
@@ -50,14 +49,8 @@ function create(fn: Function, addDep = true) {
    }
 }
 
-const keys = [ɵNG_COMP_DEF, ɵNG_DIR_DEF, ɵNG_INJ_DEF, ɵNG_PROV_DEF, ɵNG_PIPE_DEF, ɵNG_MOD_DEF]
-
-function findDef(target: any): any {
-   return keys.find(key => target[key])
-}
-
 export function Auto() {
-   return function <T extends Constructor>(target: any) {
+   return function (target: any) {
       const ngDoCheck = target.prototype.ngDoCheck
       target.prototype.ngDoCheck = function () {
          for (const key of getMetaKey(target.prototype, check).keys()) {
@@ -101,16 +94,18 @@ export function Auto() {
          ngOnDestroy?.apply(this)
       }
       setupLifecycles(target.prototype)
-      const key = findDef(target)
-      const def = target[key]
-      if (def) {
-         const factory = def.factory
-         def.factory = function (...argArray: any[]) {
-            return create(() => factory ? factory(...argArray) : new target(...argArray), false)
-         }
+      if (target[ɵNG_FAC_DEF]) {
+         const factory = target[ɵNG_FAC_DEF]
+         Object.defineProperty(target, ɵNG_FAC_DEF, {
+            get(): any {
+               return function (...argArray: any[]) {
+                  return create(() => factory(...argArray), false)
+               }
+            }
+         })
       } else {
          return new Proxy(target, {
-            construct(target: T, argArray: any[], newTarget: Function): object {
+            construct(target: any, argArray: any[], newTarget: Function): object {
                return create(() => Reflect.construct(target, argArray, newTarget))
             }
          })

@@ -307,10 +307,11 @@ describe("Auto", () => {
       })
 
       it("should compose lifecycle methods for each object", () => {
-         @Auto()
          @Injectable({ providedIn: "root" })
+         @Auto()
          class AutoTest {
             constructor() {
+               new Composable();
                new Composable();
             }
          }
@@ -320,7 +321,7 @@ describe("Auto", () => {
             // @ts-expect-error
             test[method]()
             expect(spy).toHaveBeenCalledWith(method)
-            expect(spy).toHaveBeenCalledTimes(1)
+            expect(spy).toHaveBeenCalledTimes(2)
             spy.calls.reset()
          }
       })
