@@ -1,13 +1,12 @@
-import {Auto, Check, Subscribe, Unsubscribe} from "./auto";
+import { Auto, Check, Subscribe, Unsubscribe } from "./auto";
 import {
    ChangeDetectionStrategy,
    ChangeDetectorRef,
    Component,
    Injectable,
-   ɵNG_PROV_DEF
 } from "@angular/core";
-import {fakeAsync, TestBed} from "@angular/core/testing";
-import {BehaviorSubject, Subject, Subscription} from "rxjs";
+import { TestBed } from "@angular/core/testing";
+import { BehaviorSubject, Subject, Subscription } from "rxjs";
 import createSpy = jasmine.createSpy;
 
 describe("Auto", () => {
@@ -145,7 +144,7 @@ describe("Auto", () => {
          expect(test.count.observers.length).toBe(1);
 
          TestBed.resetTestingModule();
-         expect(test.count.observers.length).toBe(0);
+         expect(test.count.observers).toBe(null as any);
       });
    });
 
@@ -177,7 +176,9 @@ describe("Auto", () => {
 
          expect(autoTest.count.complete).toHaveBeenCalledTimes(1);
          expect(autoTest.count.unsubscribe).toHaveBeenCalledTimes(1);
-         expect(autoTest.count.complete).toHaveBeenCalledBefore(autoTest.count.unsubscribe)
+         expect(autoTest.count.complete).toHaveBeenCalledBefore(
+            autoTest.count.unsubscribe
+         );
       });
    });
 
@@ -186,20 +187,20 @@ describe("Auto", () => {
       @Auto()
       class AutoTest {
          @Unsubscribe()
-         subscription = null
+         subscription = null;
 
          @Subscribe()
-         source = null
+         source = null;
 
          @Check()
-         value = null
+         value = null;
       }
       const autoTest = TestBed.inject(AutoTest);
       // @ts-expect-error
-      autoTest.ngDoCheck()
-      TestBed.resetTestingModule()
-      expect(autoTest).toBeTruthy()
-   })
+      autoTest.ngDoCheck();
+      TestBed.resetTestingModule();
+      expect(autoTest).toBeTruthy();
+   });
 
    describe("Component", () => {
       it("should create", () => {
@@ -245,38 +246,47 @@ describe("Auto", () => {
    });
 
    describe("Composition", () => {
-      let spy: jasmine.Spy
-      const methods = ["ngOnChanges", "ngOnInit", "ngDoCheck", "ngAfterContentInit", "ngAfterContentChecked", "ngAfterViewInit", "ngAfterViewChecked", "ngOnDestroy"] as const
+      let spy: jasmine.Spy;
+      const methods = [
+         "ngOnChanges",
+         "ngOnInit",
+         "ngDoCheck",
+         "ngAfterContentInit",
+         "ngAfterContentChecked",
+         "ngAfterViewInit",
+         "ngAfterViewChecked",
+         "ngOnDestroy",
+      ] as const;
 
       beforeEach(() => {
-        spy = createSpy()
-      })
+         spy = createSpy();
+      });
 
       @Auto()
       class Composable {
          ngOnChanges() {
-            spy("ngOnChanges")
+            spy("ngOnChanges");
          }
          ngOnInit() {
-            spy("ngOnInit")
+            spy("ngOnInit");
          }
          ngDoCheck() {
-            spy("ngDoCheck")
+            spy("ngDoCheck");
          }
          ngAfterContentInit() {
-            spy("ngAfterContentInit")
+            spy("ngAfterContentInit");
          }
          ngAfterContentChecked() {
-            spy("ngAfterContentChecked")
+            spy("ngAfterContentChecked");
          }
          ngAfterViewInit() {
-            spy("ngAfterViewInit")
+            spy("ngAfterViewInit");
          }
          ngAfterViewChecked() {
-            spy("ngAfterViewChecked")
+            spy("ngAfterViewChecked");
          }
          ngOnDestroy() {
-            spy("ngOnDestroy")
+            spy("ngOnDestroy");
          }
       }
 
@@ -286,7 +296,7 @@ describe("Auto", () => {
             object = new Composable();
          }
          expect(AutoTest).toBeTruthy();
-      })
+      });
 
       it("should compose lifecycle methods", () => {
          @Injectable({ providedIn: "root" })
@@ -296,15 +306,15 @@ describe("Auto", () => {
                new Composable();
             }
          }
-         const test = TestBed.inject(AutoTest)
+         const test = TestBed.inject(AutoTest);
 
          for (const method of methods) {
             // @ts-expect-error
-            test[method]()
-            expect(spy).toHaveBeenCalledOnceWith(method)
-            spy.calls.reset()
+            test[method]();
+            expect(spy).toHaveBeenCalledOnceWith(method);
+            spy.calls.reset();
          }
-      })
+      });
 
       it("should compose lifecycle methods for each object", () => {
          @Injectable({ providedIn: "root" })
@@ -315,15 +325,15 @@ describe("Auto", () => {
                new Composable();
             }
          }
-         const test = TestBed.inject(AutoTest)
+         const test = TestBed.inject(AutoTest);
 
          for (const method of methods) {
             // @ts-expect-error
-            test[method]()
-            expect(spy).toHaveBeenCalledWith(method)
-            expect(spy).toHaveBeenCalledTimes(2)
-            spy.calls.reset()
+            test[method]();
+            expect(spy).toHaveBeenCalledWith(method);
+            expect(spy).toHaveBeenCalledTimes(2);
+            spy.calls.reset();
          }
-      })
-   })
+      });
+   });
 });

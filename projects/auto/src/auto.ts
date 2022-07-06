@@ -13,112 +13,93 @@ class AutoObserver {
    ) {}
 }
 
-const methods = ["ngOnChanges", "ngOnInit", "ngDoCheck", "ngAfterContentInit", "ngAfterContentChecked", "ngAfterViewInit", "ngAfterViewChecked", "ngOnDestroy"]
-const ɵNG_FAC_DEF = "ɵfac"
+const ngDoCheck = "ngDoCheck";
+const ngOnDestroy = "ngOnDestroy";
+const methods = [
+   "ngOnChanges",
+   "ngOnInit",
+   ngDoCheck,
+   "ngAfterContentInit",
+   "ngAfterContentChecked",
+   "ngAfterViewInit",
+   "ngAfterViewChecked",
+   ngOnDestroy,
+];
+const ɵNG_FAC_DEF = "ɵfac";
 
 function setupLifecycles(target: any) {
    for (const method of methods) {
-      const fn = target[method]
+      const fn = target[method];
       target[method] = function (arg?: any) {
-         fn?.call(this, arg)
+         fn?.call(this, arg);
          for (const dep of this[auto]) {
-            dep[method]?.(arg)
+            dep[method]?.(arg);
          }
-      }
+      };
    }
 }
 
 function create(fn: Function, addDep = true) {
-   const deps = new Set()
-   const previous = setDeps(deps)
+   const deps = new Set();
+   const previous = setDeps(deps);
    try {
-      const instance = fn()
+      const instance = fn();
       if (addDep) {
-         previous?.add(instance)
+         previous?.add(instance);
       }
-      Object.defineProperty(instance, auto, {value: deps})
+      Object.defineProperty(instance, auto, { value: deps });
       Object.defineProperty(instance, observer, {
          value: new AutoObserver(
             inject(ChangeDetectorRef),
             inject(ErrorHandler)
-         )
-      })
-      return instance
+         ),
+      });
+      return instance;
    } finally {
-      setDeps(previous)
+      setDeps(previous);
    }
 }
 
 export function Auto() {
    return function (target: any) {
-      const ngDoCheck = target.prototype.ngDoCheck
-      target.prototype.ngDoCheck = function () {
-         for (const key of getMetaKey(target.prototype, check).keys()) {
-            const currentValue = this[key];
-            const previousValue = getMetaKey(this, previous, check).get(key);
-            if (currentValue !== previousValue) {
-               getMetaKey(this, previous, check).set(key, currentValue);
-               this[observer].next();
-            }
+      for (const name of features) {
+         const meta = getMetaKey(target.prototype, name);
+         if (meta.size) {
+            feature.get(name).call(null, target, name);
          }
-         for (const key of getMetaKey(target.prototype, subscribe).keys()) {
-            const currentValue = this[key];
-            const previousValue = getMetaKey(this, previous, subscribe).get(
-               key
-            );
-            if (currentValue !== previousValue) {
-               getMetaKey(this, previous, subscribe).set(key, currentValue);
-               const subscriptionMap = getMetaKey(
-                  this,
-                  previous,
-                  unsubscribe
-               );
-               subscriptionMap.get(key)?.unsubscribe?.();
-               subscriptionMap.set(
-                  key,
-                  currentValue?.subscribe(this[observer])
-               );
-            }
-         }
-         ngDoCheck?.apply(this)
       }
-      const ngOnDestroy = target.prototype.ngOnDestroy
-      target.prototype.ngOnDestroy = function () {
-         for (const key of getMetaKey(this, previous, unsubscribe).keys()) {
-            getMetaKey(this, previous, unsubscribe).get(key)?.unsubscribe?.();
-         }
-         for (const key of getMetaKey(target.prototype, unsubscribe).keys()) {
-            this[key]?.complete?.();
-            this[key]?.unsubscribe?.();
-         }
-         ngOnDestroy?.apply(this)
-      }
-      setupLifecycles(target.prototype)
+      setupLifecycles(target.prototype);
       if (target[ɵNG_FAC_DEF]) {
-         const factory = target[ɵNG_FAC_DEF]
+         const factory = target[ɵNG_FAC_DEF];
          Object.defineProperty(target, ɵNG_FAC_DEF, {
             get(): any {
                return function (...argArray: any[]) {
-                  return create(() => factory(...argArray), false)
-               }
-            }
-         })
+                  return create(() => factory(...argArray), false);
+               };
+            },
+         });
       } else {
          return new Proxy(target, {
-            construct(target: any, argArray: any[], newTarget: Function): object {
-               return create(() => Reflect.construct(target, argArray, newTarget))
-            }
-         })
+            construct(
+               target: any,
+               argArray: any[],
+               newTarget: Function
+            ): object {
+               return create(() =>
+                  Reflect.construct(target, argArray, newTarget)
+               );
+            },
+         });
       }
    };
 }
 
-let deps: Set<any> | undefined
+let deps: Set<any> | undefined;
 
 function setDeps(value?: Set<any>): Set<any> | undefined {
-   const previous = deps
-   deps = value
-   return previous
+   const previous = deps;
+   deps = value;
+   return previous;
 }
 
 const auto = Symbol();
@@ -129,6 +110,7 @@ const previous = Symbol();
 const unsubscribe = Symbol();
 
 const metadata = new WeakMap();
+const features = [check, subscribe, unsubscribe];
 
 function ensureKey(target: any, key?: PropertyKey) {
    return target.get(key) ?? target.set(key, new Map()).get(key);
@@ -147,14 +129,79 @@ function setMetaKey(
    getMetaKey(target, meta, property).set(value);
 }
 
-function createDecorator(meta: PropertyKey): () => PropertyDecorator {
+const feature = new Map();
+
+function wrap(
+   target: any,
+   key: string,
+   fn: (this: any, ...args: any[]) => void
+) {
+   const origFn = target[key];
+   target[key] = function (...args: any[]) {
+      fn.apply(this, args);
+      return origFn?.apply(this, args);
+   };
+}
+
+function checkFeature(target: any, check: symbol) {
+   const map = getMetaKey(target.prototype, check);
+   wrap(target.prototype, ngDoCheck, function () {
+      const cache = getMetaKey(this, previous, check);
+      for (const key of map.keys()) {
+         const currentValue = this[key];
+         const previousValue = cache.get(key);
+         if (currentValue !== previousValue) {
+            cache.set(key, currentValue);
+            this[observer].next();
+         }
+      }
+   });
+}
+
+function subscribeFeature(target: any, subscribe: symbol) {
+   const map = getMetaKey(target.prototype, subscribe);
+   wrap(target.prototype, ngDoCheck, function () {
+      const previousMap = getMetaKey(this, previous, subscribe);
+      for (const key of map.keys()) {
+         const currentValue = this[key];
+         const previousValue = previousMap.get(key);
+         if (currentValue !== previousValue) {
+            previousMap.set(key, currentValue);
+            const subscriptionMap = getMetaKey(this, previous, unsubscribe);
+            subscriptionMap.get(key)?.unsubscribe?.();
+            subscriptionMap.set(key, currentValue?.subscribe(this[observer]));
+         }
+      }
+   });
+   wrap(target.prototype, ngOnDestroy, function () {
+      const previousMap = getMetaKey(this, previous, subscribe);
+      for (const key of getMetaKey(this, previous, unsubscribe).keys()) {
+         previousMap.get(key)?.unsubscribe?.();
+      }
+   });
+}
+
+function unsubscribeFeature(target: any, unsubscribe: symbol) {
+   wrap(target.prototype, ngOnDestroy, function () {
+      for (const key of getMetaKey(target.prototype, unsubscribe).keys()) {
+         this[key]?.complete?.();
+         this[key]?.unsubscribe?.();
+      }
+   });
+}
+
+function createDecorator(
+   meta: PropertyKey,
+   featureFn: any
+): () => PropertyDecorator {
    return function () {
       return function (target: any, key: PropertyKey) {
          setMetaKey(target, meta, key);
+         feature.set(meta, featureFn);
       };
-   }
+   };
 }
 
-export const Check = createDecorator(check)
-export const Subscribe = createDecorator(subscribe)
-export const Unsubscribe = createDecorator(unsubscribe)
+export const Check = createDecorator(check, checkFeature);
+export const Subscribe = createDecorator(subscribe, subscribeFeature);
+export const Unsubscribe = createDecorator(unsubscribe, unsubscribeFeature);

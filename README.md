@@ -53,7 +53,7 @@ Automatically compose the decorated class. Lifecycle hooks cascade to any `Auto`
 
 ### `Check`
 
-Automatically check when the decorated value and mark the view dirty when it changes. Use with `OnPush` change detection strategy.
+Automatically check when the decorated value during `ngDoCheck` and mark the view dirty when it changes. Use with `OnPush` change detection strategy.
 
 ### `Subscribe`
 
