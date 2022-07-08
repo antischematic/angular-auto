@@ -7,7 +7,7 @@
    },
    "license": "MIT",
    "keywords": ["Angular", "experimental", "decorator", "composition", "api", "lifecycle", "hooks", "subscribe", "unsubscribe", "auto", "automatic", "observable", "rxjs"],
-   "version": "0.1.1",
+   "version": "0.1.2",
    "peerDependencies": {
       "@angular/common": "^14.0.0",
       "@angular/core": "^14.0.0"

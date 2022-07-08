@@ -1,9 +1,14 @@
-import {ChangeDetectorRef, Component, inject, Injectable, Injector} from "@angular/core";
+import {
+   ChangeDetectionStrategy,
+   ChangeDetectorRef,
+   Component,
+   inject,
+   Injectable,
+   Injector
+} from "@angular/core";
 import {Auto, Check, Subscribe} from "@mmuscat/angular-auto";
-import { interval } from "rxjs";
-import { tap } from "rxjs/operators";
-import {HttpClient} from "@angular/common/http";
-
+import {interval} from "rxjs";
+import {tap} from "rxjs/operators";
 
 @Auto()
 @Injectable()
@@ -28,7 +33,9 @@ class Composable {
       console.log('nested destroy', this.context)
    }
 
-   constructor(private context: string) {}
+   constructor(private context: string) {
+      console.log('context', this)
+   }
 }
 
 @Auto()
@@ -36,7 +43,8 @@ class Composable {
    selector: "app-root",
    templateUrl: "./app.component.html",
    styleUrls: ["./app.component.css"],
-   providers: [Service]
+   providers: [Service],
+   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppComponent {
    title = "test";

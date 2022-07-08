@@ -2,12 +2,13 @@ import { Auto, Check, Subscribe, Unsubscribe } from "./auto";
 import {
    ChangeDetectionStrategy,
    ChangeDetectorRef,
-   Component,
-   Injectable,
+   Component, ElementRef, inject,
+   Injectable, InjectionToken,
 } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { BehaviorSubject, Subject, Subscription } from "rxjs";
 import createSpy = jasmine.createSpy;
+import {By} from "@angular/platform-browser";
 
 describe("Auto", () => {
    beforeEach(() => {
@@ -19,12 +20,19 @@ describe("Auto", () => {
                   markForCheck: createSpy("markForCheck"),
                },
             },
+            {
+               provide: ElementRef,
+               useValue: {
+                  nativeElement: {}
+               }
+            }
          ],
       });
    });
 
    it("should decorate class", () => {
       @Auto()
+      @Component({ template: `` })
       class MyComponent {}
 
       expect(MyComponent).toBeTruthy();
@@ -41,8 +49,8 @@ describe("Auto", () => {
       });
 
       it("should mark for check", () => {
-         @Injectable({ providedIn: "root" })
          @Auto()
+         @Injectable({ providedIn: "root" })
          class AutoTest {
             @Check()
             count = 0;
@@ -60,8 +68,8 @@ describe("Auto", () => {
 
    describe("Subscribe", () => {
       it("should decorate", () => {
-         @Injectable({ providedIn: "root" })
          @Auto()
+         @Injectable({ providedIn: "root" })
          class MyComponent {
             @Subscribe()
             count = new BehaviorSubject(0);
@@ -70,8 +78,8 @@ describe("Auto", () => {
       });
 
       it("should subscribe", () => {
-         @Injectable({ providedIn: "root" })
          @Auto()
+         @Injectable({ providedIn: "root" })
          class AutoTest {
             @Subscribe()
             count = new BehaviorSubject(0);
@@ -86,8 +94,8 @@ describe("Auto", () => {
       });
 
       it("should switch subscriptions", () => {
-         @Injectable({ providedIn: "root" })
          @Auto()
+         @Injectable({ providedIn: "root" })
          class AutoTest {
             @Subscribe()
             count = new BehaviorSubject(0);
@@ -110,8 +118,8 @@ describe("Auto", () => {
       });
 
       it("should mark for check", () => {
-         @Injectable({ providedIn: "root" })
          @Auto()
+         @Injectable({ providedIn: "root" })
          class AutoTest {
             @Subscribe()
             count = new BehaviorSubject(0);
@@ -131,8 +139,8 @@ describe("Auto", () => {
       });
 
       it("should unsubscribe", () => {
-         @Injectable({ providedIn: "root" })
          @Auto()
+         @Injectable({ providedIn: "root" })
          class AutoTest {
             @Subscribe()
             count = new BehaviorSubject(0);
@@ -158,8 +166,8 @@ describe("Auto", () => {
          expect(AutoTest).toBeTruthy();
       });
       it("should dispose when destroyed", () => {
-         @Injectable({ providedIn: "root" })
          @Auto()
+         @Injectable({ providedIn: "root" })
          class AutoTest {
             @Unsubscribe()
             count = new Subject();
@@ -183,8 +191,8 @@ describe("Auto", () => {
    });
 
    it("should allow null values", () => {
-      @Injectable({ providedIn: "root" })
       @Auto()
+      @Injectable({ providedIn: "root" })
       class AutoTest {
          @Unsubscribe()
          subscription = null;
@@ -299,8 +307,8 @@ describe("Auto", () => {
       });
 
       it("should compose lifecycle methods", () => {
-         @Injectable({ providedIn: "root" })
          @Auto()
+         @Injectable({ providedIn: "root" })
          class AutoTest {
             constructor() {
                new Composable();
@@ -317,8 +325,8 @@ describe("Auto", () => {
       });
 
       it("should compose lifecycle methods for each object", () => {
-         @Injectable({ providedIn: "root" })
          @Auto()
+         @Injectable({ providedIn: "root" })
          class AutoTest {
             constructor() {
                new Composable();
@@ -335,5 +343,46 @@ describe("Auto", () => {
             spy.calls.reset();
          }
       });
+      it("should throw when injecting root tokens", () => {
+         const Token = new InjectionToken("Test", {
+            factory() {
+               return new Composable()
+            }
+         })
+         @Auto()
+         @Component({ template: ``, standalone: true })
+         class Parent {
+            token = TestBed.inject(Token)
+         }
+
+         expect(() => {
+            TestBed.configureTestingModule({imports: [Parent]})
+               .createComponent(Parent)
+         }).toThrow(new Error("Invalid context"))
+      })
+      it("should use correct context", () => {
+         const Token = new InjectionToken("Test")
+
+         @Auto()
+         @Component({ selector: 'child', template: ``, standalone: true })
+         class Child {
+            token = inject(Token)
+         }
+
+         @Auto()
+         @Component({ template: `<child></child>`, standalone: true, imports: [Child], providers: [{ provide: Token, useFactory: () => new Composable() }] })
+         class Parent {}
+         const parent = TestBed.configureTestingModule({imports: [Parent]})
+            .createComponent(Parent)
+         const child = parent.debugElement.query(By.directive(Child))
+
+         spy.calls.reset()
+         child.componentInstance.ngOnInit()
+         expect(spy).not.toHaveBeenCalled()
+
+         // @ts-expect-error
+         parent.componentInstance.ngOnInit()
+         expect(spy).toHaveBeenCalledOnceWith("ngOnInit")
+      })
    });
 });
