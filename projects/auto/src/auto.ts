@@ -1,4 +1,4 @@
-import {ChangeDetectorRef, ErrorHandler, inject, InjectFlags,} from "@angular/core";
+import {ChangeDetectorRef, ErrorHandler, inject, InjectFlags, ɵNG_COMP_DEF} from "@angular/core";
 
 class AutoObserver {
    private changeDetector = inject(ChangeDetectorRef);
@@ -88,10 +88,20 @@ export function Auto() {
          define(target, ɵNG_FAC_DEF, {
             get(): any {
                return create(factory);
-            },
+            }
          });
       } else {
          return new Proxy(target, {
+            defineProperty(target: any, p: string | symbol, attributes: PropertyDescriptor): boolean {
+               if (p === ɵNG_FAC_DEF) {
+                  setupLifecycles(target.prototype);
+                  const factory = attributes.get?.()
+                  attributes.get = function () {
+                     return create(factory)
+                  }
+               }
+               return Reflect.defineProperty(target, p, attributes)
+            },
             construct(
                target: any,
                argArray: any[],
@@ -99,7 +109,9 @@ export function Auto() {
             ): object {
                const instance = Reflect.construct(target, argArray, newTarget);
                depsContext.set(instance, inject(ChangeDetectorRef, InjectFlags.Self))
-               deps?.add(instance);
+               if (!target.hasOwnProperty(ɵNG_FAC_DEF)) {
+                  deps?.add(instance);
+               }
                return instance;
             },
          });

@@ -363,10 +363,11 @@ describe("Auto", () => {
       it("should use correct context", () => {
          const Token = new InjectionToken("Test")
 
-         @Auto()
          @Component({ selector: 'child', template: ``, standalone: true })
+         @Auto()
          class Child {
             token = inject(Token)
+            parent = inject(Parent)
          }
 
          @Auto()
