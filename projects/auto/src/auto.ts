@@ -1,4 +1,9 @@
-import {ChangeDetectorRef, ErrorHandler, inject, InjectFlags, ɵNG_COMP_DEF} from "@angular/core";
+import {
+   ChangeDetectorRef,
+   ErrorHandler,
+   inject,
+   InjectFlags,
+} from "@angular/core";
 
 class AutoObserver {
    private changeDetector = inject(ChangeDetectorRef);
@@ -39,15 +44,15 @@ function setupLifecycles(target: any) {
 }
 
 function assertDepsAreValid(deps: Set<any>) {
-   const { context } = inject(ChangeDetectorRef, InjectFlags.Self) as any
+   const { context } = inject(ChangeDetectorRef, InjectFlags.Self) as any;
    for (const dep of Array.from(deps)) {
-      const targetContext = depsContext.get(dep)?.context
+      const targetContext = depsContext.get(dep)?.context;
       if (targetContext !== context) {
-         deps.delete(dep)
+         deps.delete(dep);
          if (depsContext.has(targetContext)) {
-            depsContext.get(targetContext).add(dep)
+            depsContext.get(targetContext).add(dep);
          } else {
-            throw new Error("Invalid context")
+            throw new Error("Invalid context");
          }
       }
    }
@@ -59,8 +64,8 @@ function create(fn: Function) {
       const previous = setDeps(deps);
       try {
          const instance = fn(...args);
-         depsContext.set(instance, deps)
-         assertDepsAreValid(deps)
+         depsContext.set(instance, deps);
+         assertDepsAreValid(deps);
          define(instance, auto, { value: deps });
          define(instance, observer, {
             value: new AutoObserver(),
@@ -72,7 +77,7 @@ function create(fn: Function) {
    };
 }
 
-const depsContext = new WeakMap
+const depsContext = new WeakMap();
 
 export function Auto() {
    return function (target: any) {
@@ -88,19 +93,23 @@ export function Auto() {
          define(target, ɵNG_FAC_DEF, {
             get(): any {
                return create(factory);
-            }
+            },
          });
       } else {
          return new Proxy(target, {
-            defineProperty(target: any, p: string | symbol, attributes: PropertyDescriptor): boolean {
+            defineProperty(
+               target: any,
+               p: string | symbol,
+               attributes: PropertyDescriptor
+            ): boolean {
                if (p === ɵNG_FAC_DEF) {
                   setupLifecycles(target.prototype);
-                  const factory = attributes.get?.()
+                  const factory = attributes.get?.();
                   attributes.get = function () {
-                     return create(factory)
-                  }
+                     return create(factory);
+                  };
                }
-               return Reflect.defineProperty(target, p, attributes)
+               return Reflect.defineProperty(target, p, attributes);
             },
             construct(
                target: any,
@@ -108,7 +117,10 @@ export function Auto() {
                newTarget: Function
             ): object {
                const instance = Reflect.construct(target, argArray, newTarget);
-               depsContext.set(instance, inject(ChangeDetectorRef, InjectFlags.Self))
+               depsContext.set(
+                  instance,
+                  inject(ChangeDetectorRef, InjectFlags.Self)
+               );
                if (!target.hasOwnProperty(ɵNG_FAC_DEF)) {
                   deps?.add(instance);
                }
